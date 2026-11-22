@@ -14,6 +14,8 @@ Keep Luna assignments narrow and evidence-based. Send architectural choices, com
 
 For Codex configuration questions, use the configured `openaiDeveloperDocs` MCP server and official documentation. [Custom agents and settings](https://learn.chatgpt.com/docs/agent-configuration/subagents) · [AGENTS.md discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md) · [Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
+When the command protection hook denies a command, preserve that decision. For an intended GitLab write, report the exact target, method, proposed changes, and verification GETs. Ask the user to run the write in their terminal and verify the result with REST GET afterward.
+
 ## Delegated feature work
 
 The main Codex conversation owns the feature from request through verification. Apply the following workflow when the user requests delegated feature work. Handle a narrow question or a one-file change directly when appropriate. An agent receiving one assignment follows its own role and returns findings to its caller.

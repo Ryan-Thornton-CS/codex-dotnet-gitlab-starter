@@ -1,0 +1,19 @@
+{
+  "description": "Review high-impact Git, GitLab, and filesystem commands before Codex runs them.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/guard_commands.py\"",
+            "commandWindows": "$root = git rev-parse --show-toplevel; if ($LASTEXITCODE -eq 0) { python (Join-Path $root '.codex/hooks/guard_commands.py') } else { exit 1 }",
+            "timeout": 5,
+            "statusMessage": "Checking Git and GitLab commands"
+          }
+        ]
+      }
+    ]
+  }
+}

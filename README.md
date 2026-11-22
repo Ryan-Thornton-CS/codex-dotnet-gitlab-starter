@@ -9,7 +9,8 @@ Use the Codex extension in your existing VS Code workspace. The main chat orches
 3. Merge `repository/.codex/config.toml` into the target repository's `.codex/config.toml`. Put root keys (`model`, `model_reasoning_effort`, `review_model`) before any TOML table. Merge existing `[agents]` and `[mcp_servers.openaiDeveloperDocs]` tables once. The starter allows four concurrent child threads, defaults unassigned agents to Luna / high, and connects the official documentation MCP server. Preserve your company provider and authentication in user-level configuration.
 4. Merge `repository/AGENTS.md` with the repository's instructions. Replace the build-discovery paragraph with the exact commands from your CI or developer shell once you know them. Keep the Windows configuration/platform pair, restore method, adapter or runsettings, and any Inventor integration prerequisites together.
 5. Optionally merge `personal/AGENTS.md` into your Codex home `AGENTS.md` for preferences that span projects. The normal home is `~/.codex` (usually `%USERPROFILE%\.codex` on native Windows). A VS Code session running Codex in WSL can use a different home and executable PATH. Project files travel with the checkout.
-6. Use a trusted project and open a fresh Codex chat at the repository root. In the **Codex sidebar**, run the smoke prompt below. Keep any organization-managed settings in force.
+6. Install and review the [command protection hook](#protect-git-and-gitlab-commands).
+7. Use a trusted project and open a fresh Codex chat at the repository root. In the **Codex sidebar**, run the smoke prompt below. Keep any organization-managed settings in force.
 
 The configuration uses the current OpenAI names. Older managed clients that document only `max_threads` can use that key as the four-thread cap in place of `max_concurrent_threads_per_session`. The included `max_depth = 2` permits the planner-to-GitLab level on the V1 backend. V2 ignores that setting, so the orchestration instructions limit delegation to the intended roles. Agent dispatch also depends on the installed client and company policy. Check the Codex extension version deployed by your organization if the smoke prompt cannot find the roles. [Codex configuration schema](https://learn.chatgpt.com/docs/config-schema.json)
 
@@ -49,6 +50,21 @@ There is no reliable community consensus establishing one best level for both mo
 
 For this starter, use **medium for coordination and mechanical work, high for substantive coding or analysis**. Try xhigh only for a specific unresolved problem; record whether it improves the result. Compare completed-task time, repeated reads, failed attempts, and useful findings. The existing three-pass limit still applies. Higher effort alone does not control scope: give each role a stopping condition and stop when its assigned checks pass.
 
+## Protect Git and GitLab commands
+
+Copy `repository/.codex/hooks.json` and `repository/.codex/hooks/guard_commands.py` to the same paths under the target checkout's `.codex/` directory. If the project already has hooks, append this `PreToolUse` group to its existing hook configuration. Use a recent local Codex client and Python 3.9+ on the Codex host. The launcher uses `python3` on Linux, macOS and WSL, and `python` on native Windows with PowerShell. Start Codex in the trusted checkout, review the script, and use `/hooks` in the Codex CLI to trust the hook. Open a fresh VS Code chat after installing or changing it. [Codex hook setup and trust](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks).
+
+| Allows in Codex | Requires manual execution |
+| --- | --- |
+| Status, diff, fetch, normal pushes and branch switches | Force pushes (including `--force-with-lease`), remote ref deletion, and mirror or prune pushes |
+| `git clean -n` and `git restore --staged` | Hard resets, working tree restores, forced branch changes, non-dry-run cleans and stash deletion |
+| GitLab REST `GET` and `HEAD`, including pagination and explicitly read-only query fields | GitLab API writes, implicit POSTs from fields, request bodies and GraphQL. The hook also blocks direct `glab` delete, remove, archive, transfer and revoke commands |
+| Ordinary file cleanup | Direct recursive deletion or removal of `.git` metadata |
+
+Verify activation from a Codex chat in a scratch checkout. Ask it to run `git status --short` and then `git -C missing-canary-path reset --hard`, using a directory name that does not exist. The first should run and the second should show the hook's denial before Git can report a missing directory. For a GitLab check, ask it to run `glab api --hostname example.invalid -X DELETE projects/0`. The hook should deny it before the CLI attempts a connection.
+
+The hook inspects visible shell commands, including common shell wrappers and pipelines. Scripts, aliases, shell expansion, direct HTTP clients, MCP tools and manual terminal commands fall outside its coverage. Configure Git server branch protections and use read-scoped GitLab credentials where you need enforcement independent of Codex. When the hook blocks an intended write, ask Codex for the exact command and target so you can review and execute it yourself. [Codex hook tool coverage](https://learn.chatgpt.com/docs/hooks#tool-coverage).
+
 ## Configure GitLab
 
 Use the official `glab` CLI on the host where Codex executes commands. Sign in to the company instance using your approved method. A credential with `read_api` scope and project access is enough for retrieval. Applied changes require an identity with write capability and the GitLab role required for the operation. A Codex role description alone cannot enforce that distinction. For technically enforced retrieval-only sessions, expose only a read-scoped identity to the session.
@@ -79,9 +95,9 @@ Group boards have their own API. The board-list response describes the columns. 
 
 > Use planner and gitlab_specialist to design a project board for this feature. Inspect existing boards, labels, and issue templates. Propose columns for Ready, In progress, and Review using our existing workflow labels where possible. Return the proposed board, reusable issue IIDs, missing labels and lists, and draft acceptance criteria. Proposal only.
 
-**Board apply prompt**
+**Board change handoff prompt**
 
-> Apply the agreed board changes to the named project. Re-read current state and create only what is missing. Preserve existing cards and unrelated labels. Return the board URL, resulting list IDs, and issue links for any issue changes I requested.
+> Re-read the named project's current board and prepare the exact GitLab commands for the agreed changes. Include the host, project, dependent IDs and verification GETs. Preserve existing cards and unrelated labels. I'll run the writes in my terminal, then ask you to verify the resulting board and issue links.
 
 ## Give the mapper C# symbols
 
