@@ -1,0 +1,22 @@
+# Local credentials and environment overrides
+.env
+.env.*
+!.env.example
+auth.json
+.codex/auth.json
+.codex/config.local.toml
+
+# Editor and OS files
+.vs/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build output and local logs
+**/bin/
+**/obj/
+TestResults/
+*.log
+.codex-log/

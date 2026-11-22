@@ -1,0 +1,18 @@
+# Merge root keys before any tables in your existing project config.
+# Keep provider/auth settings in your user-level config on each machine.
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
+review_model = "gpt-5.6-terra"
+
+# Merge into an existing [agents] table rather than duplicating it.
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+default_subagent_model = "gpt-5.6-luna"
+default_subagent_reasoning_effort = "high"
+# V1 supports root -> planner -> GitLab at depth 2. V2 ignores this key.
+max_depth = 2
+
+# Official Codex/API documentation, inherited by custom agents.
+[mcp_servers.openaiDeveloperDocs]
+url = "https://developers.openai.com/mcp"
