@@ -33,6 +33,7 @@ On a Windows host with Inventor and Vault installed, use the native Windows agen
 | `regression_reviewer` | GPT-5.6 Terra | `high` | Trace changed behavior through existing callers and report concrete regressions |
 | `inventor_ipc_specialist` | GPT-5.6 Terra | `high` | Own the Windows named-pipe protocol, host-safe COM capture, and detached model snapshots |
 | `desktop_ui_specialist` | GPT-5.6 Terra | `high` | Implement WPF add-in UI or evaluate WebView2 hosting and dependencies |
+| `sqlite_specialist` | GPT-5.6 Terra | `high` | Own checklist schema, migrations, queries, and data preservation |
 | `feature_intake_specialist` | GPT-5.6 Terra | `high` | Design or own the submission contract, identity, and issue creation path |
 | `repo_mapper` | GPT-5.6 Luna | `high` | Answer one bounded code-path or test-coverage question |
 | `gitlab_specialist` | GPT-5.6 Luna | `medium` | Update Kanban boards, inspect CI failures, and retry specific jobs or pipelines |
@@ -150,6 +151,8 @@ If you also maintain a RepoPilot catalog, use it for the durable project map and
 Keep the Inventor 2024 package on .NET Framework 4.8 while you support that host. Inventor 2025 moved to .NET 8, and older 2026 builds were from that runtime generation. Autodesk's updated Inventor 2026.4 and Vault 2026.4 move to .NET 10. Microsoft ended .NET 8 support on November 10, 2026. For an updated 2026.4 deployment, start with `net10.0-windows` and verify matching Autodesk SDKs, dependencies and deployment on the exact Inventor/Vault images. If both generations remain in use, plan separate host-specific packages and keep the pipe and snapshot contract compatible. [Autodesk transition guidance](https://help.autodesk.com/view/INVNTOR/2026/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FInventor--Requirements-for-products-affected-by-the-Microsoft--NET-10-transition.html) · [Vault 2026.4 runtime](https://help.autodesk.com/cloudhelp/2026/ENU/Vault-New/files/WN-general-2026_4.htm) · [Microsoft lifecycle](https://learn.microsoft.com/en-us/lifecycle/products/microsoft-net-and-net-core).
 
 Keep the WPF shell through the migration. A toolkit upgrade should address a specific compatibility gap or UI requirement. Check the exact package and version on both targets before choosing an upgrade. Use WebView2 for specific web content when it earns the extra runtime and bridge work. Test its installed runtime, window lifetime, keyboard behavior, and allowed origins inside Inventor. [WPF migration](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/migration/) · [WebView2 for WPF](https://learn.microsoft.com/en-us/microsoft-edge/webview2/get-started/wpf) · [WebView2 security](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/security).
+
+Use `sqlite_specialist` when a checklist change affects saved data, schema compatibility, or database performance. One owner keeps migration SQL and its callers aligned. Verify upgrades against a disposable database from a supported older release using the SQLite provider shipped with the add-in. Keep ordinary UI edits with the current implementer. [SQLite schema changes](https://sqlite.org/lang_altertable.html) · [SQLite foreign keys](https://sqlite.org/foreignkeys.html).
 
 ## DocFX Pages and feature suggestions
 

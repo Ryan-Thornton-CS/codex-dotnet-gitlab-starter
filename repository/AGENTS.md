@@ -17,6 +17,7 @@ The project configuration defaults the main chat to GPT-5.6 Terra at medium and 
 | Planning, implementation, migration or regression reasoning | Terra `planner`, `implementer`, `dotnet_specialist`, or `regression_reviewer` |
 | Named-pipe protocol, Inventor COM capture or in-memory snapshots | Terra `inventor_ipc_specialist` |
 | WPF, WebView2 or add-in window behavior | Terra `desktop_ui_specialist` |
+| SQLite checklist schema, migrations, query performance or persistence defects | Terra `sqlite_specialist` |
 | Feature intake trust, backend, CI trigger design or issue creation contract | Terra `feature_intake_specialist` |
 | Bounded tracing, MSTest fixtures or acceptance evidence | Luna `repo_mapper`, `test_engineer`, or `requirement_auditor` |
 | Live board actions, pipeline evidence or targeted retries | Luna `gitlab_specialist` |
@@ -24,6 +25,8 @@ The project configuration defaults the main chat to GPT-5.6 Terra at medium and 
 | DocFX navigation, user guides, release pages or suggestion UI | Luna `pages_docs_specialist`. Send backend and access decisions to Terra |
 
 Keep Luna assignments narrow and evidence-based. Send architectural choices, complex fixture design, uncertain behavior across projects, and COM or host reasoning to the main chat for a Terra assignment. A role's pinned settings take precedence over a spawn-time model request; use the appropriate Terra role rather than trying to override a Luna role in its task prompt. Do not repeatedly raise effort on a vague assignment. Clarify its observable result and stopping condition first.
+
+Keep routine checklist UI changes with their assigned implementer. Bring in `sqlite_specialist` when work changes persisted data or the database contract, or when it needs SQLite-specific diagnosis. Give one owner the schema, migration, and affected queries. Test upgrades on a disposable database from a supported older release.
 
 For Codex configuration questions, use the configured `openaiDeveloperDocs` MCP server and official documentation. [Custom agents and settings](https://learn.chatgpt.com/docs/agent-configuration/subagents) · [AGENTS.md discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md) · [Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
