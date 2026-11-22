@@ -7,3 +7,5 @@ Keep model and reasoning settings in TOML, and keep the README role table consis
 For verification, parse every TOML file, check the custom agent required fields and role/model assignments, and validate supported configuration keys with the installed Codex client or official schema. No application build is needed for template-only changes. An agent execution smoke check belongs in the target trusted project with its configured provider.
 
 For command hook changes, run `python3 -B -m unittest discover -s tests -v` from the starter root. The tests inspect commands without executing them.
+
+Project skills are shipped under `repository/.agents/skills/`. Keep `repository/AGENTS.md` and the README aligned with the shipped skills. Keep licenses and the documented upstream revision with imported skills.

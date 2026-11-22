@@ -5,7 +5,7 @@ Use the Codex extension in your existing VS Code workspace. The main chat orches
 ## Install in one repository
 
 1. Clone this starter to a separate folder using the command below, then open the target application checkout in the VS Code environment where you run Codex.
-2. Copy the TOML files from `repository/.codex/agents/` to `.codex/agents/` at the Git root. Merge any same-named role. Copy the three skill directories from `repository/.agents/skills/` to `.agents/skills/` at that same Git root. Codex discovers project skills at this location. [Local skill discovery](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills).
+2. Copy the TOML files from `repository/.codex/agents/` to `.codex/agents/` at the Git root. Merge any same-named role. Copy the [project skills](#project-skills) to `.agents/skills/` at that same Git root.
 3. Merge `repository/.codex/config.toml` into the target repository's `.codex/config.toml`. Put root keys (`model`, `model_reasoning_effort`, `review_model`) before any TOML table. Merge existing `[agents]` and `[mcp_servers.openaiDeveloperDocs]` tables once. The starter allows four concurrent child threads, defaults unassigned agents to Luna / high, and connects the official documentation MCP server. Preserve your company provider and authentication in user-level configuration.
 4. Merge `repository/AGENTS.md` with the repository's instructions. Replace the build-discovery paragraph with the exact commands from your CI or developer shell once you know them. Keep the Windows configuration/platform pair, restore method, adapter or runsettings, and any Inventor integration prerequisites together.
 5. Optionally merge `personal/AGENTS.md` into your Codex home `AGENTS.md` for preferences that span projects. The normal home is `~/.codex` (usually `%USERPROFILE%\.codex` on native Windows). A VS Code session running Codex in WSL can use a different home and executable PATH. Project files travel with the checkout.
@@ -13,6 +13,23 @@ Use the Codex extension in your existing VS Code workspace. The main chat orches
 7. Use a trusted project and open a fresh Codex chat at the repository root. In the **Codex sidebar**, run the smoke prompt below. Keep any organization-managed settings in force.
 
 The configuration uses the current OpenAI names. Older managed clients that document only `max_threads` can use that key as the four-thread cap in place of `max_concurrent_threads_per_session`. The included `max_depth = 2` permits the planner-to-GitLab level on the V1 backend. V2 ignores that setting, so the orchestration instructions limit delegation to the intended roles. Agent dispatch also depends on the installed client and company policy. Check the Codex extension version deployed by your organization if the smoke prompt cannot find the roles. [Codex configuration schema](https://learn.chatgpt.com/docs/config-schema.json)
+
+## Project skills
+
+The starter stores skill templates in [`repository/.agents/skills/`](repository/.agents/skills/). Copy each complete directory into `.agents/skills/` at the root of the application checkout. Codex discovers them there when you open a new chat. Mention a skill by name in your prompt to select it directly. [Codex skill discovery](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills).
+
+| Skill | Use it for |
+| --- | --- |
+| [`$inventor-host-work`](repository/.agents/skills/inventor-host-work/SKILL.md) | COM host threading, named pipes, snapshots, and WPF/WebView2 host checks |
+| [`$inventor-runtime-migration`](repository/.agents/skills/inventor-runtime-migration/SKILL.md) | Inventor and Vault runtime targets, deployment, and compatibility checks |
+| [`$gitlab-pages-intake`](repository/.agents/skills/gitlab-pages-intake/SKILL.md) | DocFX Pages, feature suggestion submission, and issue board verification |
+| [`$playwright`](repository/.agents/skills/playwright/SKILL.md) | Browser checks for DocFX Pages, navigation, releases, and feature suggestion forms |
+| [`$aspnet-core`](repository/.agents/skills/aspnet-core/SKILL.md) | A separate intake API if the feature suggestion flow uses ASP.NET Core |
+| [`$security-threat-model`](repository/.agents/skills/security-threat-model/SKILL.md) | Explicit threat modeling of Pages intake, the pipe API, or the WebView2 bridge |
+
+The last three skills come from OpenAI's curated catalog at commit `49f948f`. Each directory retains its upstream license and resources. OpenAI marks that catalog deprecated and points to its Plugins repository for current examples. For Playwright, use your approved installed CLI on the Codex host. The project copy of the wrapper lives under `.agents/skills/playwright/scripts/`. [Pinned OpenAI skills](https://github.com/openai/skills/tree/49f948faa9258a0c61caceaf225e179651397431/skills/.curated) · [OpenAI Plugins](https://github.com/openai/plugins).
+
+Agent instructions define scope, workflow, verification when relevant, and the result to return. Skills carry the reusable procedures for tasks that need them. The layout follows VoltAgent's sectioning pattern inside Codex's `developer_instructions` field. [VoltAgent example](https://github.com/VoltAgent/awesome-codex-subagents/blob/9abe3279a0aa4ee518381af800ca1062398f5433/categories/01-core-development/api-designer.toml).
 
 ## VS Code and the desktop app
 

@@ -4,9 +4,24 @@
 
 This repository targets C# on .NET Framework 4.8 and integrates with Autodesk Inventor 2024. Use the repository's existing MSBuild and MSTest workflow on the Windows build host. Identify the actual solution, configuration, platform, package restore method, test assembly, and adapter from the checked-in scripts and CI. Follow the existing language version and project-file conventions.
 
-Keep the current Inventor 2024 target for ordinary work. For an authorized migration, use `inventor-runtime-migration` to establish the exact Inventor and Vault updates, runtime targets and deployed artifacts before changing project files. Use `inventor-host-work` when a change crosses COM, named pipes, snapshots or add-in UI. Use `gitlab-pages-intake` for the DocFX site or the feature submission path.
+Keep the current Inventor 2024 target for ordinary work. For an authorized migration, establish the exact Inventor and Vault updates, runtime targets and deployed artifacts before changing project files.
 
 Keep operations that require Inventor separate from tests of ordinary .NET behavior. Record the host used, exact command, result, and number of tests executed. If the runner discovers zero tests, investigate discovery. If the required host is unavailable, identify exactly which checks are still open.
+
+## Project skills
+
+Use the skills under `.agents/skills/` for these tasks. Load only the references needed for the current assignment.
+
+| Skill | Use it when |
+| --- | --- |
+| [`inventor-host-work`](.agents/skills/inventor-host-work/SKILL.md) | The change crosses Inventor COM, named pipes, model snapshots, or add-in UI |
+| [`inventor-runtime-migration`](.agents/skills/inventor-runtime-migration/SKILL.md) | Moving to a different Inventor or Vault runtime or package |
+| [`gitlab-pages-intake`](.agents/skills/gitlab-pages-intake/SKILL.md) | Updating DocFX Pages, feature suggestions, or the path from submission to a board card |
+| [`playwright`](.agents/skills/playwright/SKILL.md) | Exercising a Pages preview in a real browser, including links, navigation and form behavior |
+| [`aspnet-core`](.agents/skills/aspnet-core/SKILL.md) | Designing or implementing a separately hosted ASP.NET Core intake service using an agreed target framework |
+| [`security-threat-model`](.agents/skills/security-threat-model/SKILL.md) | The user explicitly requests threat modeling for the intake endpoint, named-pipe trust boundary, or WebView2 bridge |
+
+For Playwright, use the approved CLI on the Codex host. Resolve any bundled wrapper from the project skill at `.agents/skills/playwright/scripts/playwright_cli.sh`. Exercise forms against a local preview or test destination. Use the Windows Inventor host to check WPF and embedded WebView2 behavior. Keep the existing GitLab authorization and hook rules for live actions.
 
 ## Model and reasoning policy
 
