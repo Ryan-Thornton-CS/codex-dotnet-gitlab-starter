@@ -1,11 +1,11 @@
 # Codex for VS Code · C# and GitLab starter
 
-Use the Codex extension in your existing VS Code workspace. The main chat orchestrates with **GPT-5.6 Terra / medium**. Eight custom roles use Terra or Luna with explicit reasoning settings matched to their work. Keep your approved company provider configured on the machine where Codex runs. The desktop app becomes useful when you want a second independent feature running in its own managed Git worktree.
+Use the Codex extension in your existing VS Code workspace. The main chat orchestrates with **GPT-5.6 Terra / medium** and chooses specialized Terra or Luna roles for Inventor add-in development, GitLab CI, and the DocFX site. Keep your approved company provider configured on the machine where Codex runs. The desktop app can run a separate feature in its own managed Git worktree.
 
 ## Install in one repository
 
 1. Clone this starter to a separate folder using the command below, then open the target application checkout in the VS Code environment where you run Codex.
-2. Copy the eight TOML files from `repository/.codex/agents/` to `.codex/agents/` at the Git root. Merge any same-named role with your existing definition.
+2. Copy the TOML files from `repository/.codex/agents/` to `.codex/agents/` at the Git root. Merge any same-named role. Copy the three skill directories from `repository/.agents/skills/` to `.agents/skills/` at that same Git root. Codex discovers project skills at this location. [Local skill discovery](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills).
 3. Merge `repository/.codex/config.toml` into the target repository's `.codex/config.toml`. Put root keys (`model`, `model_reasoning_effort`, `review_model`) before any TOML table. Merge existing `[agents]` and `[mcp_servers.openaiDeveloperDocs]` tables once. The starter allows four concurrent child threads, defaults unassigned agents to Luna / high, and connects the official documentation MCP server. Preserve your company provider and authentication in user-level configuration.
 4. Merge `repository/AGENTS.md` with the repository's instructions. Replace the build-discovery paragraph with the exact commands from your CI or developer shell once you know them. Keep the Windows configuration/platform pair, restore method, adapter or runsettings, and any Inventor integration prerequisites together.
 5. Optionally merge `personal/AGENTS.md` into your Codex home `AGENTS.md` for preferences that span projects. The normal home is `~/.codex` (usually `%USERPROFILE%\.codex` on native Windows). A VS Code session running Codex in WSL can use a different home and executable PATH. Project files travel with the checkout.
@@ -14,6 +14,14 @@ Use the Codex extension in your existing VS Code workspace. The main chat orches
 
 The configuration uses the current OpenAI names. Older managed clients that document only `max_threads` can use that key as the four-thread cap in place of `max_concurrent_threads_per_session`. The included `max_depth = 2` permits the planner-to-GitLab level on the V1 backend. V2 ignores that setting, so the orchestration instructions limit delegation to the intended roles. Agent dispatch also depends on the installed client and company policy. Check the Codex extension version deployed by your organization if the smoke prompt cannot find the roles. [Codex configuration schema](https://learn.chatgpt.com/docs/config-schema.json)
 
+## VS Code and the desktop app
+
+Keep VS Code as the main workspace for focused C# and XAML edits, editor selections, and reviewing diffs in place. Use your existing Windows build and Inventor environment for host checks. The extension already supports custom agents and skills. [Codex IDE extension](https://learn.chatgpt.com/docs/codex/ide) · [Custom agents](https://learn.chatgpt.com/docs/agent-configuration/subagents).
+
+Use Codex in the ChatGPT desktop app when you want a separate chat and managed worktree for independent work such as DocFX navigation or a migration inventory. The desktop adds worktree setup scripts, reusable project actions, a Git review pane, and scheduled work. Use Handoff to bring an independent change back to the primary checkout for integration and live host checks. [Desktop worktrees](https://learn.chatgpt.com/docs/environments/git-worktrees) · [Desktop local environments](https://learn.chatgpt.com/docs/environments/local-environment).
+
+On a Windows host with Inventor and Vault installed, use the native Windows agent for work that needs their SDKs or a live host. VS Code in WSL and the Windows-native desktop app may use different Codex homes and PATHs. Verify the provider, hooks, GitLab CLI, and Windows build command in the selected environment before relying on it. Worktrees isolate files, while installed Autodesk runtimes and add-in registration remain shared on that machine. [Windows desktop environments](https://learn.chatgpt.com/docs/windows/windows-app).
+
 ## Who owns what
 
 | Role | Model | Reasoning | Assignment |
@@ -21,16 +29,23 @@ The configuration uses the current OpenAI names. Older managed clients that docu
 | Main chat | GPT-5.6 Terra | `medium` | Coordinate, reconcile, integrate, verify, and own the pass count |
 | `planner` | GPT-5.6 Terra | `medium` | Translate request and repository facts into criteria, file owners, dependencies, and checks |
 | `implementer` | GPT-5.6 Terra | `high` | Own one complete behavior slice and its ordinary tests |
-| `dotnet_specialist` | GPT-5.6 Terra | `high` | Diagnose legacy builds, COM, Inventor, and test discovery |
+| `dotnet_specialist` | GPT-5.6 Terra | `high` | Diagnose builds and interop, or plan Inventor and Vault runtime migration |
 | `regression_reviewer` | GPT-5.6 Terra | `high` | Trace changed behavior through existing callers and report concrete regressions |
+| `inventor_ipc_specialist` | GPT-5.6 Terra | `high` | Own the Windows named-pipe protocol, host-safe COM capture, and detached model snapshots |
+| `desktop_ui_specialist` | GPT-5.6 Terra | `high` | Implement WPF add-in UI or evaluate WebView2 hosting and dependencies |
+| `feature_intake_specialist` | GPT-5.6 Terra | `high` | Design or own the submission contract, identity, and issue creation path |
 | `repo_mapper` | GPT-5.6 Luna | `high` | Answer one bounded code-path or test-coverage question |
 | `gitlab_specialist` | GPT-5.6 Luna | `medium` | Update Kanban boards, inspect CI failures, and retry specific jobs or pipelines |
+| `ci_pipeline_specialist` | GPT-5.6 Luna | `high` | Fix an assigned runner script or CI job using failure and artifact evidence |
+| `pages_docs_specialist` | GPT-5.6 Luna | `high` | Own DocFX navigation, user and developer docs, releases, and suggestion UI |
 | `test_engineer` | GPT-5.6 Luna | `high` | Implement focused fixtures and boundary cases for agreed behavior |
 | `requirement_auditor` | GPT-5.6 Luna | `high` | Check each acceptance criterion against source and verification evidence |
 
 Codex instructions describe how to delegate. They do not install a scheduler or isolate a role's credentials. The main chat names the requested roles and dispatches work. If nested dispatch is unavailable, the planner hands its GitLab lookup to the main chat, which sends the result back. Each included role pins both `model` and `model_reasoning_effort`; the table above is the intended policy. Custom agent files take precedence over explicit spawn settings, agent defaults, and parent settings. To change a pinned role, edit its TOML file and start a fresh chat. Set provider, MCP, approval, and sandbox controls on the parent session; custom roles inherit them.
 
 ## Model and reasoning choices
+
+VoltAgent calls fixed per-role model selection **Smart Model Routing**. The starter already pins models in TOML and now records the task-to-role decision in project `AGENTS.md`. It adapts VoltAgent's API designer, .NET, frontend, DevOps, documentation, and test role patterns to this workflow. Codex uses `developer_instructions` for standalone role files and inherits permissions from the parent session, so the templates use the official schema and describe file ownership in the role instructions. [VoltAgent routing and example](https://github.com/VoltAgent/awesome-codex-subagents/blob/9abe3279a0aa4ee518381af800ca1062398f5433/README.md#smart-model-routing) · [Codex custom agent schema](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents).
 
 These are project defaults for new chats after installation, not a change to an already running conversation. The IDE model picker, selected profile, or CLI overrides can supersede project defaults. Check the displayed root model and effort in a fresh chat. Root `review_model` also keeps the built-in `/review` on Terra; the custom `regression_reviewer` independently pins Terra / high.
 
@@ -130,6 +145,30 @@ For an off-the-shelf option, Serena is an open-source local MCP server with a C#
 
 If you also maintain a RepoPilot catalog, use it for the durable project map and build profiles. Use Roslyn or Serena for current symbol identity and references. Let one mapper return just the paths, symbols, and context needed for the task.
 
+## Inventor, Vault, and the add-in UI
+
+Keep the Inventor 2024 package on .NET Framework 4.8 while you support that host. Inventor 2025 moved to .NET 8, and older 2026 builds were from that runtime generation. Autodesk's updated Inventor 2026.4 and Vault 2026.4 move to .NET 10. Microsoft ended .NET 8 support on November 10, 2026. For an updated 2026.4 deployment, start with `net10.0-windows` and verify matching Autodesk SDKs, dependencies and deployment on the exact Inventor/Vault images. If both generations remain in use, plan separate host-specific packages and keep the pipe and snapshot contract compatible. [Autodesk transition guidance](https://help.autodesk.com/view/INVNTOR/2026/ENU/?caas=caas%2Fsfdcarticles%2Fsfdcarticles%2FInventor--Requirements-for-products-affected-by-the-Microsoft--NET-10-transition.html) · [Vault 2026.4 runtime](https://help.autodesk.com/cloudhelp/2026/ENU/Vault-New/files/WN-general-2026_4.htm) · [Microsoft lifecycle](https://learn.microsoft.com/en-us/lifecycle/products/microsoft-net-and-net-core).
+
+Keep the WPF shell through the migration. A toolkit upgrade should address a specific compatibility gap or UI requirement. Check the exact package and version on both targets before choosing an upgrade. Use WebView2 for specific web content when it earns the extra runtime and bridge work. Test its installed runtime, window lifetime, keyboard behavior, and allowed origins inside Inventor. [WPF migration](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/migration/) · [WebView2 for WPF](https://learn.microsoft.com/en-us/microsoft-edge/webview2/get-started/wpf) · [WebView2 security](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/security).
+
+## DocFX Pages and feature suggestions
+
+Keep the existing DocFX build. Give users clear links to usage guides, releases, and feature suggestions. Give developers a separate navigation path to API and development docs. If those audiences require different access, use separate access-controlled projects or sites. Verify navigation and downloads under the actual Pages path before publishing. [DocFX documentation](https://dotnet.github.io/docfx/) · [Pages access control](https://docs.gitlab.com/user/project/pages/pages_access_control/).
+
+1. If submitters can create GitLab issues, start with a link to the new issue page with a feature proposal template selected. Apply the intake label and verify the resulting ticket matches the Kanban column and any board filters. This path uses GitLab's own sign-in and issue submission flow. [Issue links and prefills](https://docs.gitlab.com/user/project/issues/create_issues/) · [Description templates](https://docs.gitlab.com/user/project/description_templates/).
+2. If users need an embedded form or lack GitLab access, host an intake endpoint separately. Have it validate and deduplicate submissions, authenticate callers or moderate abuse as appropriate, create the issue in a fixed project, and return a receipt. Keep GitLab credentials server-side. Route through a dedicated pipeline only if intake needs async processing or mediation and the service and job identities have the necessary access. GitLab Pages serves static files. [GitLab Pages](https://docs.gitlab.com/user/project/pages/) · [Issues API](https://docs.gitlab.com/api/issues/) · [Pipeline triggers](https://docs.gitlab.com/ci/triggers/).
+
+## Optional tools
+
+| Tool | Use in this workflow |
+| --- | --- |
+| Microsoft Learn MCP | Merge [optional/microsoft-learn.toml](optional/microsoft-learn.toml) for .NET, WPF, WebView2 and Windows API references. Confirm the optional server is usable on the approved Codex host. [Microsoft endpoint](https://learn.microsoft.com/en-us/training/support/mcp) |
+| Roslyn or Serena | Use the approved Windows-host symbol service for source lookup and references. Use the installed Inventor and Vault SDKs and sample projects for Autodesk signatures. [Vault developer tools](https://help.autodesk.com/cloudhelp/Help/ENU/Vault/files/GUID-F21E7DD6-39E9-473C-84BB-3446BCAFCCC0.htm) |
+| Playwright CLI or MCP | Use an approved, pinned tool version for local DocFX/Pages navigation, forms and release links. Run real WPF, WebView2-in-Inventor and COM checks on Windows. [Playwright CLI](https://github.com/microsoft/playwright-cli) · [Playwright MCP](https://github.com/microsoft/playwright-mcp) |
+| GitLab MCP | Consider it for read-only issue and pipeline evidence if enabled on your GitLab instance. Check its available toolsets and permissions. Keep board writes and targeted retries on the guarded `glab` path. [GitLab MCP toolsets](https://docs.gitlab.com/user/model_context_protocol/mcp_server_tools/) |
+
+The starter keeps these integrations optional. The installed project skills cover the workflow without adding a runtime service to the add-in or site.
+
 ## First delegated run
 
 **Verify role discovery**
@@ -140,7 +179,15 @@ First confirm the root picker shows GPT-5.6 Terra / medium. Confirm the role fil
 
 **Run a feature**
 
-> Orchestrate GitLab issue #123 in this repository using the custom agents. Start repo_mapper and planner in parallel. Have planner delegate the issue and board lookup to gitlab_specialist, or dispatch that lookup from the main chat if needed. Freeze the acceptance criteria after reconciling both reports. Delegate disjoint implementation slices. Add test_engineer or dotnet_specialist where useful. Build and run the relevant tests on the integrated changes, then run requirement_auditor and regression_reviewer independently. Stop at the first verified pass, with a maximum of three. Leave GitLab unchanged for this run.
+> Orchestrate GitLab issue #123 using the delegated workflow in AGENTS.md. Use the smallest useful set of agents from its routing table. Verify the Windows build, managed tests, and any required Inventor host checks. Review the integrated changes independently against the original issue. Leave GitLab unchanged for this run.
+
+**Plan the 2026 migration**
+
+> Use $inventor-runtime-migration and the dotnet_specialist. Inventory the 2024 package and the exact 2026 Inventor and Vault versions we plan to deploy. Return a runtime and packaging matrix, dependency gaps, and a Windows verification plan. Planning only.
+
+**Plan feature intake**
+
+> Use $gitlab-pages-intake. Have pages_docs_specialist inspect our DocFX routes and feature_intake_specialist verify whether our intended users can submit to the destination project. Propose a user/developer navigation split and a feature submission path. Show how one issue would reach the intended board column. Proposal only.
 
 For a small change, one implementer can own both the fix and its test. Add the testing agent when a prior version should demonstrate a failure, several input states produce different outcomes, or a fixture needs expertise. For example, the implementer can wire an Inventor command while the testing agent characterizes an existing filename-mapping rule used by that command. Reserve a live Inventor check for loading the add-in and invoking the command.
 

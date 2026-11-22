@@ -1,0 +1,3 @@
+# Merge into the active Codex config if Microsoft Learn MCP is approved on this host.
+[mcp_servers.microsoft_learn]
+url = "https://learn.microsoft.com/api/mcp"
