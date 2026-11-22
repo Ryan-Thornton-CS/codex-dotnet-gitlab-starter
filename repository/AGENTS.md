@@ -14,7 +14,7 @@ Keep Luna assignments narrow and evidence-based. Send architectural choices, com
 
 For Codex configuration questions, use the configured `openaiDeveloperDocs` MCP server and official documentation. [Custom agents and settings](https://learn.chatgpt.com/docs/agent-configuration/subagents) · [AGENTS.md discovery](https://learn.chatgpt.com/docs/agent-configuration/agents-md) · [Configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
-When the command protection hook denies a command, preserve that decision. For an intended GitLab write, report the exact target, method, proposed changes, and verification GETs. Ask the user to run the write in their terminal and verify the result with REST GET afterward.
+For an authorized GitLab board change, verify the target, apply the smallest allowed update, and re-read the affected resources. Inspect CI failures by project, pipeline, SHA, and job ID. Retry the specific job when requested and use a pipeline retry only when the requested scope covers its failed or canceled jobs. If the command protection hook denies an operation, preserve that decision and report the exact target and proposed operation for manual review.
 
 ## Delegated feature work
 

@@ -4,17 +4,38 @@ import json
 import os
 import re
 import sys
-from urllib.parse import unquote
+from urllib.parse import parse_qsl, unquote
 
 
-GITLAB_WRITE = (
-    "GitLab API writes require manual execution. Read current state with REST GET "
-    "and show the exact host, target, method, and proposed change."
-)
 GITLAB_UNKNOWN = (
-    "Could not verify a read-only GitLab API call. Use a literal REST endpoint "
-    "with GET or HEAD and documented flags."
+    "Could not verify this GitLab API call. Use a REST endpoint with documented glab flags."
 )
+GITLAB_WRITE = (
+    "This GitLab write is outside the hook's permitted board, issue, label, and retry operations. "
+    "Read current state and show the exact target and proposed change for manual review."
+)
+GITLAB_DELETE = "GitLab deletion is blocked. Review the resource and run any intended deletion manually."
+
+# Preserve encoded namespace slashes inside the locator. Match the actual route
+# structure so a similar path such as jobs/123/erase cannot qualify as a retry.
+GITLAB_SLUG = r"[A-Za-z0-9_][A-Za-z0-9_.-]*"
+GITLAB_LOCATOR = rf"{GITLAB_SLUG}(?:%2[fF]{GITLAB_SLUG})*"
+PROJECT = rf"projects/(?:{GITLAB_LOCATOR}|:id|:fullpath)"
+GROUP = rf"groups/(?:{GITLAB_LOCATOR}|:group)"
+BOARD_SCOPE = rf"(?:{PROJECT}|{GROUP})"
+ID = r"[1-9][0-9]*"
+GITLAB_WRITE_ROUTES = {
+    "POST": re.compile(
+        rf"{BOARD_SCOPE}/(?:boards(?:/{ID}/lists)?|labels)"
+        rf"|{PROJECT}/(?:issues(?:/{ID}/notes)?|(?:jobs|pipelines)/{ID}/retry)"
+    ),
+    "PUT": re.compile(
+        rf"{BOARD_SCOPE}/(?:boards/{ID}(?:/lists/{ID})?|labels/{ID})"
+        rf"|{PROJECT}/issues/{ID}"
+    ),
+}
+
+
 # Keep quoted words together, and handle common pipelines and redirections.
 REDIRECTION = r"(?P<redirect>\d*(?:>>?|<)&?)"
 POSIX_LEXER = re.compile(
@@ -168,6 +189,7 @@ def git_denial(args):
 def glab_api_denial(args):
     methods, endpoints = [], []
     fields = False
+    paginate = False
     arg_iter = iter(args)
     for arg in arg_iter:
         if arg == "--":
@@ -187,10 +209,13 @@ def glab_api_denial(args):
             if attached:
                 value = attached + (equals + value if equals else "")
                 equals = "="
-        if flag in {"--paginate", "--silent", "--include", "--help"}:
+        if flag == "--paginate":
+            paginate = True
+            continue
+        if flag in {"--silent", "--include", "--help"}:
             continue
         if flag in {"--input", "--form"}:
-            return GITLAB_WRITE
+            return "GitLab request bodies must use visible -f or -F fields for permitted writes."
         if flag not in {"X", "F", "f", "H", "--method", "--field", "--raw-field",
                         "--hostname", "--header", "--output", "--placeholder"}:
             return GITLAB_UNKNOWN
@@ -201,19 +226,71 @@ def glab_api_denial(args):
             methods.append(value.upper())
         elif flag in {"F", "f", "--field", "--raw-field"}:
             fields = True
+            if value.partition("=")[0].split("[", 1)[0].strip().lower() == "_method":
+                return "GitLab HTTP method overrides are blocked. Use --method."
         elif flag in {"H", "--header"} and value.partition(":")[0].strip().lower() in {
             "x-http-method", "x-http-method-override", "x-method-override",
         }:
-            return GITLAB_WRITE
-    if any(method not in {"GET", "HEAD"} for method in methods) or (fields and not methods):
-        return GITLAB_WRITE
+            return "GitLab HTTP method overrides are blocked. Use --method."
+    if "DELETE" in methods:
+        return GITLAB_DELETE
+    if len(methods) > 1:
+        return "Use a single explicit GitLab HTTP method."
     if not endpoints and args in ([], ["--help"], ["-h"]):
         return None
     if len(endpoints) != 1 or not re.match(r"^/?[A-Za-z0-9]", endpoints[0]):
         return GITLAB_UNKNOWN
-    path = unquote(endpoints[0]).split("?", 1)[0].rstrip("/").lower()
-    if path == "graphql" or path.endswith("/graphql"):
+    path, _, query = endpoints[0].partition("?")
+    decoded_path = unquote(path).strip("/").lower()
+    if decoded_path == "graphql" or decoded_path.endswith("/graphql"):
         return "Use GitLab REST GET for this lookup. GraphQL can submit mutations through POST."
+    if any(key.split("[", 1)[0].strip().lower() == "_method" for key, _ in parse_qsl(query)):
+        return "GitLab HTTP method overrides are blocked. Use --method."
+    if fields and not methods:
+        return "GitLab fields default to POST. Use explicit GET for a lookup or POST for a permitted write."
+    method = methods[0] if methods else "GET"
+    if method in {"GET", "HEAD"}:
+        return None
+    route = GITLAB_WRITE_ROUTES.get(method)
+    if route and not paginate and route.fullmatch(path.removeprefix("/").removesuffix("/")):
+        return None
+    return GITLAB_WRITE
+
+
+def glab_without_repo_flags(args):
+    remaining = []
+    flags = iter(args)
+    for arg in flags:
+        if arg == "--":
+            remaining.extend(flags)
+            break
+        if arg in {"-R", "--repo"}:
+            next(flags, None)
+        elif not arg.startswith(("-R", "--repo=")):
+            remaining.append(arg)
+    return remaining
+
+
+def glab_denial(args):
+    if args[:1] == ["api"]:
+        return glab_api_denial(args[1:])
+    args = glab_without_repo_flags(args)
+    if len(args) < 2:
+        return None
+    command, action, *values = args
+    if values in (["-h"], ["--help"]):
+        return None
+    if command in {"ci", "pipe", "pipeline"}:
+        if action == "retry" and not (len(values) == 1 and re.fullmatch(ID, values[0])):
+            return "Use glab ci retry with one numeric job ID. Inspect that job and its trace first."
+        if action == "view":
+            return "Use glab ci get, glab ci trace, or REST GET. The interactive view can cancel or run jobs."
+        if action in {"cancel", "run", "run-trig", "run-trigger", "erase", "play", "trigger"}:
+            return "Only targeted GitLab CI retries are permitted. Use read commands to inspect the pipeline."
+    if (command, action) == ("schedule", "run"):
+        return "Starting a scheduled GitLab pipeline is outside the retry policy."
+    if action in {"delete", "remove", "archive", "transfer", "revoke", "unregister", "erase", "prune"}:
+        return GITLAB_DELETE
     return None
 
 
@@ -235,12 +312,7 @@ def command_denial(command, windows, depth=0):
         if program == "git":
             result = git_denial(args)
         elif program == "glab":
-            if args[:1] == ["api"]:
-                result = glab_api_denial(args[1:])
-            elif len(args) >= 2 and args[1] in {
-                "delete", "remove", "archive", "transfer", "revoke",
-            }:
-                result = "This GitLab CLI operation can remove remote resources. Review and run it manually."
+            result = glab_denial(args)
         elif program in {"bash", "sh", "zsh", "dash", "pwsh", "powershell", "cmd"}:
             markers = {"-c", "-command", "/c"} if program in {"pwsh", "powershell", "cmd"} else {"-c", "-lc"}
             for index, arg in enumerate(args[:-1]):

@@ -24,7 +24,7 @@ The configuration uses the current OpenAI names. Older managed clients that docu
 | `dotnet_specialist` | GPT-5.6 Terra | `high` | Diagnose legacy builds, COM, Inventor, and test discovery |
 | `regression_reviewer` | GPT-5.6 Terra | `high` | Trace changed behavior through existing callers and report concrete regressions |
 | `repo_mapper` | GPT-5.6 Luna | `high` | Answer one bounded code-path or test-coverage question |
-| `gitlab_specialist` | GPT-5.6 Luna | `medium` | Retrieve tickets/boards or apply a specified board/label/issue transition |
+| `gitlab_specialist` | GPT-5.6 Luna | `medium` | Update Kanban boards, inspect CI failures, and retry specific jobs or pipelines |
 | `test_engineer` | GPT-5.6 Luna | `high` | Implement focused fixtures and boundary cases for agreed behavior |
 | `requirement_auditor` | GPT-5.6 Luna | `high` | Check each acceptance criterion against source and verification evidence |
 
@@ -58,12 +58,14 @@ Copy `repository/.codex/hooks.json` and `repository/.codex/hooks/guard_commands.
 | --- | --- |
 | Status, diff, fetch, normal pushes and branch switches | Force pushes (including `--force-with-lease`), remote ref deletion, and mirror or prune pushes |
 | `git clean -n` and `git restore --staged` | Hard resets, working tree restores, forced branch changes, non-dry-run cleans and stash deletion |
-| GitLab REST `GET` and `HEAD`, including pagination and explicitly read-only query fields | GitLab API writes, implicit POSTs from fields, request bodies and GraphQL. The hook also blocks direct `glab` delete, remove, archive, transfer and revoke commands |
+| GitLab REST `GET` and `HEAD`, including failed pipelines, job details and traces | GitLab `DELETE`, job erasure, cancellation, new pipeline runs, and manual job starts |
+| Explicit REST writes to create or update project and group boards, lists and labels. Agents can create or update project issues and add comments | Other `glab api` writes, GraphQL, implicit POSTs, method overrides, and body files or multipart forms |
+| Retry a specific job with `glab ci retry <job-id>` or REST `POST`. Retry failed or canceled jobs in a specific pipeline with REST `POST` | Interactive `glab ci view` and untargeted CLI retries. Use `glab ci get`, `glab ci trace`, or REST GET for inspection |
 | Ordinary file cleanup | Direct recursive deletion or removal of `.git` metadata |
 
 Verify activation from a Codex chat in a scratch checkout. Ask it to run `git status --short` and then `git -C missing-canary-path reset --hard`, using a directory name that does not exist. The first should run and the second should show the hook's denial before Git can report a missing directory. For a GitLab check, ask it to run `glab api --hostname example.invalid -X DELETE projects/0`. The hook should deny it before the CLI attempts a connection.
 
-The hook inspects visible shell commands, including common shell wrappers and pipelines. Scripts, aliases, shell expansion, direct HTTP clients, MCP tools and manual terminal commands fall outside its coverage. Configure Git server branch protections and use read-scoped GitLab credentials where you need enforcement independent of Codex. When the hook blocks an intended write, ask Codex for the exact command and target so you can review and execute it yourself. [Codex hook tool coverage](https://learn.chatgpt.com/docs/hooks#tool-coverage).
+The hook inspects visible shell commands, including common shell wrappers and pipelines. Scripts, aliases, shell expansion, direct HTTP clients, MCP tools and manual terminal commands fall outside its coverage. Configure Git server branch protections and use read-scoped GitLab credentials for sessions that only need retrieval. When the hook blocks an intended write, ask Codex for the exact command and target so you can review and execute it yourself. [Codex hook tool coverage](https://learn.chatgpt.com/docs/hooks#tool-coverage).
 
 ## Configure GitLab
 
@@ -86,7 +88,9 @@ glab api --hostname $GitLabHost --method GET --paginate "projects/:fullpath/boar
 | Retrieve a ticket and acceptance text | `GET /projects/:id/issues/:issue_iid` |
 | List cards for a label-backed column | `GET /projects/:id/issues` with the applicable state, labels, board scope, and pagination |
 | Create a project board for an authorized request | `POST /projects/:id/boards` |
+| Update the board name or scope | `PUT /projects/:id/boards/:board_id` |
 | Add a missing label-backed column | Find or create its project label, then `POST /projects/:id/boards/:board_id/lists` with the label ID |
+| Reorder a board column | `PUT /projects/:id/boards/:board_id/lists/:list_id` with `position` |
 | Move an issue between label lists | `PUT /projects/:id/issues/:issue_iid` using `remove_labels` and `add_labels` for that transition |
 
 Group boards have their own API. The board-list response describes the columns. To reconstruct the cards, the agent also needs issues, board filters, and the rule for each column. The project lists endpoint omits the built-in Open and Closed lists. Check available features against your self-managed GitLab version and tier.
@@ -95,9 +99,23 @@ Group boards have their own API. The board-list response describes the columns. 
 
 > Use planner and gitlab_specialist to design a project board for this feature. Inspect existing boards, labels, and issue templates. Propose columns for Ready, In progress, and Review using our existing workflow labels where possible. Return the proposed board, reusable issue IIDs, missing labels and lists, and draft acceptance criteria. Proposal only.
 
-**Board change handoff prompt**
+**Board apply prompt**
 
-> Re-read the named project's current board and prepare the exact GitLab commands for the agreed changes. Include the host, project, dependent IDs and verification GETs. Preserve existing cards and unrelated labels. I'll run the writes in my terminal, then ask you to verify the resulting board and issue links.
+> Apply the agreed board changes in the named project. Re-read the current board and create only what is missing. Preserve existing cards and unrelated labels. Verify the updated board and return the board URL, affected list IDs, and issue links.
+
+Use `--method POST` or `--method PUT` and supply documented fields with `-f` or `-F`. The hook accepts numeric project or group IDs and URL-encoded paths such as `group%2Fproject`. Use concrete board, list, issue, job, and pipeline IDs in API writes. For a group board, update cards through each issue's owning project. [Project boards API](https://docs.gitlab.com/api/boards/) · [Group boards API](https://docs.gitlab.com/api/group_boards/) · [GLab API flags](https://docs.gitlab.com/cli/api/).
+
+**Inspect and retry CI failures**
+
+Read the failed jobs for the specific pipeline and fetch the relevant job trace. The following example uses project `42`, pipeline `123` and job `456`. Substitute the actual host and IDs before running it.
+
+```powershell
+glab api --hostname $GitLabHost --method GET --paginate -f 'scope[]=failed' 'projects/42/pipelines/123/jobs'
+glab api --hostname $GitLabHost --method GET 'projects/42/jobs/456/trace'
+glab api --hostname $GitLabHost --method POST 'projects/42/jobs/456/retry'
+```
+
+When a retry is requested, verify the job belongs to the selected pipeline and SHA, retry that job once, and check the new job ID and status. Use `POST projects/42/pipelines/123/retry` only when the request covers all failed or canceled jobs in that pipeline. Check whether the retry would run deployment or release work before proceeding. [Jobs API](https://docs.gitlab.com/api/jobs/) · [Pipelines API](https://docs.gitlab.com/api/pipelines/).
 
 ## Give the mapper C# symbols
 
