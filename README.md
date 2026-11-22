@@ -4,6 +4,8 @@ Use the Codex extension in your existing VS Code workspace. The main chat orches
 
 ## Install in one repository
 
+To have Codex do the setup, open your application checkout and give it [SETUP_PROMPT.md](SETUP_PROMPT.md). The prompt covers merging the templates, preserving existing settings, and checking the installation.
+
 1. Clone this starter to a separate folder using the command below, then open the target application checkout in the VS Code environment where you run Codex.
 2. Copy the TOML files from `repository/.codex/agents/` to `.codex/agents/` at the Git root. Merge any same-named role. Copy the [project skills](#project-skills) to `.agents/skills/` at that same Git root.
 3. Merge `repository/.codex/config.toml` into the target repository's `.codex/config.toml`. Put root keys (`model`, `model_reasoning_effort`, `review_model`) before any TOML table. Merge existing `[agents]` and `[mcp_servers.openaiDeveloperDocs]` tables once. The starter allows four concurrent child threads, defaults unassigned agents to Luna / high, and connects the official documentation MCP server. Preserve your company provider and authentication in user-level configuration.
